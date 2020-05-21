@@ -1,0 +1,201 @@
+﻿@model FinalProject.Models.DappAccount
+@{
+    ViewData["Title"] = "RegulatorMainPage";
+    Layout = "~/Views/Shared/_LayoutRegulator.cshtml";
+}
+<br />
+
+
+@if (@Model.DeployedContractList == null)
+{
+    <br />
+    <br />
+    <div class="row justify-content-center"><h2>There are NO Previus Requests.</h2></div>
+}
+else
+{
+    <!--<div class="row justify-content-center"><button class="btn btn-light">Refresh Table</button></div>-->
+    <br />
+
+    <div class=""><h1>Final Decisions</h1></div>
+    <br />
+    <div style="display:flex"> 
+        <input class="form-control mr-sm-2 w-25" id="filterInputResults" type="text" placeholder="Search Asset ID or Loaction" onkeyup="FilterFinalDecitionsResults()" />
+        <input style="display:none" class="btn btn-warning" type="button" value="Export To Excel" id="ExportFinalDecitionsBtn" />
+        <button onclick="DownloadFinalDecitions()" class="btn btn-warning" id="ExportFinalDecitionsBtn">Export To Excel&nbsp&nbsp<i class="fa fa-download" aria-hidden="true"></i></button>
+
+    </div>
+    <br />
+
+
+
+
+    
+    <table id="decitionsTable" class=" table table-hover">
+        <thead align="center">
+            <tr>
+                <th scope="col">AssetID</th>
+                <th scope="col">Loaction</th>
+                <th scope="col">Tracking</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody align="center">
+            @foreach (var a in @Model.DeployedContractList)
+            {
+                var ContractSerialModel = Newtonsoft.Json.JsonConvert.SerializeObject(a);
+
+                <tr>
+                    <td>@a.AssetID</td>
+                    <td>@a.Loaction</td>
+                    <td><a target="_blank" href=@a.EtherscanURL>Here</a></td>
+                    <td><button class="btn btn-primary" data-toggle="modal" data-target="#ContractDetailsDialog" onclick="ViewContractDeteils( @ContractSerialModel)">View Details</button></td>
+                </tr>
+
+            }
+        </tbody>
+    </table>
+
+}
+<div class="modal fade" id="ContractDetailsDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="dialogTitle">Contract Details</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="asset_dialog_body">
+                <center><img class="w-50" id="DialogImageURL"></center>
+                <br />
+                <div style="display:flex">
+                    <p id="ContractDialogAssetID"></p>
+                    <p>&nbsp&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp&nbsp</p>
+                    <p id="ContractDialogLoaction"></p>
+                </div>
+
+                <div style="display:flex">
+                    <p id="ContractDialogAreaIn"></p>
+                    <p>&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp</p>
+                    <p id="ContractDialogRooms"></p>
+                    <p>&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp</p>
+                    <p id="ContractDialogPrice"></p>
+                </div>
+
+
+                <p id="">------------------------------------</p>
+                <p id="ContractDialogOwnerID"></p>
+                <p id="ContractDialogOwnerPublicKey"></p>
+                <p id="">------------------------------------</p>
+                <p id="ContractDialogBuyerID"></p>
+                <p id="ContractDialogBuyerPublicKey"></p>
+                <p id="">------------------------------------</p>
+                <p id="ContractDialogNewOwnerID"></p>
+                <p id="ContractDialogNewOwnerPublicKey"></p>
+                <p class="text-danger" id="ContractDialogTaxAmount"></p>
+                <h5 id="ContractDialogResult"></h5>
+                <textarea readonly id="ContractdialogNotes" rows="4" cols="50"></textarea>
+            </div>
+            <div class="modal-footer justify-content-around">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts
+{
+    <script type="text/javascript">
+        $(document).ready(function () //bold the link for this page
+        {
+            document.getElementById("navBarRegulatorHome").style.textDecoration = "underline";
+            document.getElementById("navBarRegulatorHome").style.fontWeight = "bold";
+        });
+
+        //$('#ExportFinalDecitionsBtn').click(function(){ document.location = '@Url.Action("DownloadExcelFinalDecitions" ,"Regulator")'; });
+
+
+        function DownloadFinalDecitions() //download excel version of the HTML table 
+        {
+            document.location = '@Url.Action("DownloadExcelFinalDecitions" ,"Regulator")';
+        }
+
+
+        
+
+        function ViewContractDeteils(offer) //open contract details from the blockchain
+        {
+
+            console.log("ID is : -->" + offer.OwnerID);
+            var fullPublicKey = offer.SellerPublicKey;
+            var partOne = fullPublicKey.substring(0, 12);
+            var partTwo = " . . . ";
+            var partThree = fullPublicKey.substring(32, fullPublicKey.length);
+            var OwnerPublicKeyToShow = "" + partOne + partTwo + partThree;
+
+            var fullPublicKey = offer.BuyerPublicKey;
+            var partOne = fullPublicKey.substring(0, 12);
+            var partTwo = " . . . ";
+            var partThree = fullPublicKey.substring(32, fullPublicKey.length);
+            var BuyerPublicKeyToShow = "" + partOne + partTwo + partThree;
+
+
+
+
+            document.getElementById("DialogImageURL").setAttribute("src", offer.ImageURL);
+            document.getElementById("ContractDialogAssetID").innerHTML = "Asset No : ".bold() + offer.AssetID;
+            document.getElementById("ContractDialogLoaction").innerHTML = "Loaction : ".bold() + offer.Loaction;
+            document.getElementById("ContractDialogAreaIn").innerHTML = "AreaIn : ".bold() + offer.AreaIn + " m^2";
+            document.getElementById("ContractDialogRooms").innerHTML = "Rooms : ".bold() + offer.Rooms;
+
+            var dealPriceILS = offer.PriceILS.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            var dealPriceETH = offer.PriceETH;
+            var dealPrice = "" + dealPriceETH + " ETH / ₪" + dealPriceILS;
+            document.getElementById("ContractDialogPrice").innerHTML = "Price : ".bold() + dealPrice;
+            document.getElementById("ContractDialogOwnerID").innerHTML = "Owner ID : ".bold() + offer.OwnerID;
+            document.getElementById("ContractDialogOwnerPublicKey").innerHTML = "Owner Public-Key : ".bold() + OwnerPublicKeyToShow;
+            document.getElementById("ContractDialogBuyerID").innerHTML = "Buyer ID : ".bold() + offer.BuyerID;
+            document.getElementById("ContractDialogBuyerPublicKey").innerHTML = "Buyer Public-Key : ".bold() + BuyerPublicKeyToShow;
+            document.getElementById("ContractdialogNotes").innerText = offer.DenyReason;
+            if (offer.RegulatorSign == true)
+            {
+                var taxAmountETH = offer.Tax;
+                var rate_EthToILS = @Model.exchangeRateETH_ILS;
+                var taxAmountILS = rate_EthToILS*taxAmountETH;
+                taxAmountETH = taxAmountETH.toFixed(2);
+                taxAmountILS = taxAmountILS.toFixed(2);
+                var taxAmountILSfixed = taxAmountILS.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                document.getElementById("ContractDialogTaxAmount").innerHTML = "Tax : ".bold() + taxAmountETH + " ETH / ₪" + taxAmountILSfixed;
+
+                document.getElementById("ContractDialogNewOwnerID").style.display = "block";
+                document.getElementById("ContractDialogNewOwnerPublicKey").style.display = "block";
+                var fullPublicKey = offer.NewOwnerPublicKey;
+                var partOne = fullPublicKey.substring(0, 12);
+                var partTwo = " . . . ";
+                var partThree = fullPublicKey.substring(32, fullPublicKey.length);
+                var NewOwnerPublicKeyToShow = "" + partOne + partTwo + partThree;
+
+
+                document.getElementById("ContractDialogNewOwnerID").innerHTML = "New Owner ID : ".bold() + offer.BuyerID;
+                document.getElementById("ContractDialogNewOwnerPublicKey").innerHTML = "New Owner Public-Key : ".bold() + NewOwnerPublicKeyToShow;
+                document.getElementById("ContractDialogResult").innerHTML = "Approved";
+                document.getElementById("ContractDialogResult").style.color = "lightgreen";
+
+
+
+            }
+            else {
+                document.getElementById("ContractDialogNewOwnerID").style.display = "none";
+                document.getElementById("ContractDialogNewOwnerPublicKey").style.display = "none";
+                document.getElementById("ContractDialogResult").innerHTML = "Denied By Regulaotr";
+                document.getElementById("ContractDialogResult").style.color = "red";
+                document.getElementById("ContractDialogTaxAmount").innerHTML = "";
+
+            }
+
+        }
+
+
+
+    </script>
+}

@@ -1,0 +1,221 @@
+﻿@model FinalProject.Models.DappAccount
+@{
+    ViewData["Title"] = "In Going Requests";
+    Layout = "~/Views/Shared/_LayoutRegulator.cshtml";
+}
+
+<br />
+
+
+@if (@Model.DeployedContractList == null)
+{
+    <br />
+    <br />
+    <div class="row justify-content-center"><h2>There are NO Requests.</h2></div>
+}
+else
+{
+    <br />
+
+    <div class=""><h1>Pending Contracts</h1></div>
+    <br />
+    <div style="display:flex">
+        <input class="form-control mr-sm-2 w-25" id="filterInputResults" type="text" placeholder="Search Asset ID or Loaction" onkeyup="FilterPendingContractsResults()" />
+        <input hidden class="btn btn-warning" type="button" value="Export To Excel" id="ExportPendingContractBtn" />
+        <button onclick="DownloadPendingRequests()" class="btn btn-warning" id="ExportFinalDecitionsBtn">Export To Excel&nbsp&nbsp<i class="fa fa-download" aria-hidden="true"></i></button>
+
+    </div>
+    <br />
+    <div style="display:flex">
+        <!--<input hidden onclick="RefreshTable()" class="btn btn-info" type="button" value="Refresh Table" id="RefreshPendingContractTblBtn" />-->
+        <button id="RefreshPendingContractTblBtn" onclick="RefreshTable()" class="btn btn-info">Refresh Table&nbsp&nbsp<i class="fa fa-refresh" aria-hidden="true"></i></button>
+        <img class="ml-5" style="display:none" id="RefreshTblLoader" src="https://s5.gifyu.com/images/LoaderDeploy.gif" alt="LoaderDeploy.gif" border="0" />
+    </div>
+    <br />
+
+    
+
+
+    
+    <table id="PendingContractsTable" class=" table table-hover ">
+        <thead align="center">
+            <tr>
+                <th scope="col">AssetID</th>
+                <th scope="col">Loaction</th>
+                <th scope="col">Tracking</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody align="center">
+            @foreach (var a in @Model.DeployedContractList)
+            {
+                var ContractSerialModel = Newtonsoft.Json.JsonConvert.SerializeObject(a);
+                var btnID = "viewPendingContractDetailsBtn" + a.AssetID;
+                var loaderID = "loader" + a.AssetID;
+                var lblID = "lblPendingContractResult" + a.AssetID;
+
+                <tr>
+                    <td>@a.AssetID</td>
+                    <td>@a.Loaction</td>
+                    <td><a target="_blank" href=@a.EtherscanURL>Here</a></td>
+                    <td>
+                        <button id=@btnID class="btn btn-primary" data-toggle="modal" data-target="#PendingContractDetailsDialog" onclick="ViewPendingContractDeteils( @ContractSerialModel)">View Details</button>
+                        <center><img style="display:none" id=@loaderID src="https://s5.gifyu.com/images/LoaderDeploy.gif" alt="LoaderDeploy.gif" border="0" /></center>
+                        <label style="display:none" id=@lblID></label>
+                    </td>
+                </tr>
+
+            }
+        </tbody>
+</table>
+
+
+}
+<div class="modal fade" id="PendingContractDetailsDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="dialogTitle">Contract Details</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="asset_dialog_body">
+                <center><img class="w-50" id="PendingDialogImageURL"></center>
+                <br />
+                <div style="display:flex">
+                    <p id="PendingContractDialogAssetID"></p>
+                    <p>&nbsp&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp&nbsp</p>
+                    <p id="PendingContractDialogLoaction"></p>
+                </div>
+
+                <div style="display:flex">
+                    <p id="PendingContractDialogAreaIn"></p>
+                    <p>&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp</p>
+                    <p id="PendingContractDialogRooms"></p>
+                    <p>&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp</p>
+                    <p id="PendingContractDialogPrice"></p>
+                </div>
+
+                <p id="">------------------------------------</p>
+                <p id="PendingContractDialogOwnerID"></p>
+                <p id="PendingContractDialogOwnerPublicKey"></p>
+                <p id="">------------------------------------</p>
+                <p id="PendingContractDialogBuyerID"></p>
+                <p id="PendingContractDialogBuyerPublicKey"></p>
+                <p id="">------------------------------------</p>
+                <p class="text-danger" id="PendingContractDialogTaxAmount"></p>
+
+                <input onclick="AllowNotesRegulaotrDenial()" type="checkbox" id="PendingContractCheckBox"> Add Deny Notes<br>
+                <textarea id="PendingContractdialogNotes" rows="4" cols="50"></textarea>
+            </div>
+            <div class="modal-footer justify-content-around">
+                <button id="PendingContractDenyBtn" onclick="CancelContract()" type="button" class="btn btn-danger" data-dismiss="modal">Deny&nbsp&nbsp<i class="fa fa-times" aria-hidden="true"></i></button>
+                <button id="PendingContractApproveBtn" onclick="ShowWarningFeforeApproval()" type="button" class="btn btn-success" data-dismiss="modal">Approve&nbsp&nbsp<i class="fa fa-pencil-square-o fa-lg" aria-hidden="true"></i></button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="DialogBlockchainBeforeRegulatorApprove" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Are You Sure?</h4><!--Contract Offer Details-->
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h5><strong>After this operation - There is no coming back!!</strong></h5>
+                <h5>-----------------------------------------------------------------------</h5>
+                <h6 id="additionalWarningForSigning"></h6>
+                <small class="text-danger">*The seller will receive the money.</small>
+                <br />
+                <small class="text-danger">*The revenue will be reduced by tax pay.</small>
+                <br />
+                <small class="text-danger">*The buyer receives the asset listing.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">No</button>
+                <button onclick="ApprovePendingContract()" type="button" class="btn btn-success" data-dismiss="modal">Yes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal position-fixed" id="ResultRegulatorDialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 id="ResultRegulatorDialogTitle" class="modal-title"></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div style="display:flex" class="modal-body">
+
+
+                <table>
+                    <tr>
+                        <td>
+                            <h5 id="ResultRegulatorDialogMessageContent1"></h5>
+                            <h5 style="display:none" id="ErrorRegulatorDialogMessageContent"></h5>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <h5 id="ResultRegulatorDialogMessageContent2"></h5>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display:flex">
+                                <h5 id="ResultRegulatorDialogMessageContent3">You can track it</h5>
+                                <a style="font-size:16px" target="_blank" id="ResultRegulatorDialogEtherscanURL" href="">&nbsp Here.</a>
+                            </div>
+
+                            <h5 class="text-danger" style="display:none" id="ResultRegulatorDialogMessageContent4"></h5>
+                        </td>
+                    </tr>
+
+                </table>
+
+                <img id="ResultRegulatorConfirmationImg" style="width:70px; height:70px; margin-left:auto;" />
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@section scripts
+{
+    <script type="text/javascript">
+        $(document).ready(function () //bold the link to this page
+        {
+            document.getElementById("navBarInGoingRequest").style.textDecoration = "underline";
+            document.getElementById("navBarInGoingRequest").style.fontWeight = "bold";
+            rowsInProcess = 0;
+        });
+        var rowsInProcess;
+        //$('#ExportPendingContractBtn').click(function(){ document.location = '@Url.Action("DownloadExcelPendingContracts" ,"InGoingRequests")'; });
+
+        function DownloadPendingRequests() //download excel version of the HTML table 
+        {
+            document.location = '@Url.Action("DownloadExcelPendingContracts" ,"InGoingRequests")';
+        }
+
+        var approvedContract;
+  
+
+    </script>
+}

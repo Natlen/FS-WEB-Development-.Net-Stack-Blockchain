@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FinalProject</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/darktheme.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+</head>
+<body>
+    <header style="background-color:transparent">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <a class="navbar-brand" href="#"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarColor01">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <!--<a id="assetsNavBar" class="nav-link" asp-area="" asp-controller="DappAccount" asp-action="ShowAssetPage">Assets<span class="sr-only">(current)</span></a>-->
+
+                        <a id="assetsNavBar" class="nav-link" asp-area="" asp-controller="DappAccount" asp-action="ShowOwnAssets" asp-route-PublicKey="@Model.publicKey" asp-route-account.privateKey="@Model.privateKey">Assets<span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item active">
+                        <a id="createContractNavBar" class="nav-link" asp-area="" asp-controller="CreateContract" asp-action="CreateContractPage" asp-route-PublicKey ="@Model.publicKey">Create Contract<span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item active">
+                        <a id="contractsStatusNavBar" class="nav-link" asp-area="" asp-controller="ContractsStatus" asp-action="ContractsStatusPage" asp-route-PublicKey ="@Model.publicKey">Contracts Status<span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Logout" asp-route-PublicKey ="@Model.publicKey" >Logout<span class="sr-only">(current)</span></a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav" dir="rtl">
+                    <li class="nav-item active">
+                        <input hidden type="button" class="btn btn-warning nav-item" value="Copy" onclick="copyToClipBoard()" />
+                        <button title='Copy Public-Key' onclick="copyToClipBoard()" class="btn btn-warning nav-item"><i class="fa fa-copy"></i></button>
+                    </li>
+                    <li class="nav-item active">
+                        <input id="PublicKeyInput" class="form-control" type="text" value=@Model.publicKey readonly>
+                    </li>
+                    <li class="nav-item active" title="Your Balance">
+                        <strong class="pr-2 nav-link" style="color:white !important;"> <label id="ilsBalance"></label> <label id="ethBalance"></label></strong>                     
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="modal" id="dialogCopy" >
+            <div class="modal-dialog" role="document" >
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Public-Key</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <h5>Public Key has been copied to clipboard.</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+
+
+            <script type="text/javascript">
+                (function ()
+                {
+                    updateAccountBalance();
+                })();
+
+                function updateAccountBalance() // set buyer/seller balance (Ether | ILS) from the model (=class)
+                {
+
+
+                    var accountBalanceILS=null;
+                    var accountBalanceETH=null;
+                    accountBalanceILS = @Model.IlsBalance;
+                    accountBalanceETH = @Model.EthBalance;
+                    console.log("ETH-Balance:" + accountBalanceETH);
+                    console.log("ILS-Balance:"+accountBalanceILS);
+                    accountBalanceILS = accountBalanceILS.toFixed(2);
+                    accountBalanceETH = accountBalanceETH.toFixed(2);
+                    accountBalanceILS = accountBalanceILS.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    document.getElementById("ilsBalance").innerHTML = " ₪" + accountBalanceILS +" | ETH" ;
+                    document.getElementById("ethBalance").innerHTML = "" +  accountBalanceETH ;
+                }
+
+
+
+                function updateAccountBalanceAfterBlockchainOperation(publicKey) // update buyer/seller balance (Ether | ILS)
+                {
+                    var echangeRate = @Model.exchangeRateETH_ILS;
+                    console.log("Before update, the public key is : "+publicKey);
+                    $.ajax(
+                    {
+                        url: "/DappAccount/RecheckBalanceAfterBlockchainOperation",
+                        type: 'POST',
+                        async: true,
+                        data: {PublicKey: publicKey},
+                        success: function (data)
+                        {
+                            var accountBalanceETH = data;
+                            afterBalanceETH = data; //for fee calcultion only
+                            afterBalanceILS = afterBalanceETH * echangeRate; //for fee calcultion only
+                            var accountBalanceILS = accountBalanceETH * echangeRate;
+                            accountBalanceILS = accountBalanceILS.toFixed(2);
+                            accountBalanceETH = accountBalanceETH.toFixed(2);
+                            accountBalanceILS = accountBalanceILS.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            document.getElementById("ilsBalance").innerHTML = " ₪" + accountBalanceILS +" | ETH" ;
+                            document.getElementById("ethBalance").innerHTML = "" + accountBalanceETH;
+
+                        },
+
+                            error: function (xhr, text, error)
+                            {
+                                console.log("Error in update of balance after bloackchain operation failed");
+                            }
+                    });
+                }
+
+
+            </script>
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">- Assets Purchase & Selling through Blockchain based Smart Contracts -</div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
+

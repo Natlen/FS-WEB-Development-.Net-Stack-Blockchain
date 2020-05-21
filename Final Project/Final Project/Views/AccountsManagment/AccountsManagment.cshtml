@@ -1,0 +1,148 @@
+﻿@model RegulatorAccount
+
+@{
+    ViewData["Title"] = "AccountsManagment";
+    Layout = "~/Views/Shared/_LayoutRegulator.cshtml";
+}
+
+<br />
+<br />
+<h1>Accounts Managment</h1>
+<br />
+
+<div style="display:flex">
+    
+    <div style="width:100%">
+
+        <h4>New Account:</h4>
+        <table>
+            <tr>
+                <td>
+                    <label>ID:</label>
+                    <input onkeyup="checkValidityOfIdInput()" class="form-control" id="NewIdNumber" type="text" placeholder="Insert ID number" />
+                    <div id="validInputID" style="display:none" class="valid-feedback">Valid ID</div>
+                    <div id="inValidInputID" style="display:none" class="invalid-feedback"></div>
+                </td>
+
+            </tr>
+            <tr>
+                <td>
+                    <label class="mt-2">Public-Key:</label>
+                    <input onkeyup="checkValidityOfPublicKeyInput()" class="form-control" id="NewPublicKey" type="text" placeholder="Insert public-key" />
+                    <div id="validInputPublicKey" style="display:none" class="valid-feedback">Valid public-key</div>
+                    <div id="inValidInputPublicKey" style="display:none" class="invalid-feedback">Sorry, that username's taken. Try another?</div>
+
+                </td>
+            </tr>
+        </table>
+
+        <br />
+        <table>
+            <tr>
+                <td>
+                    <input hidden value="Add" class="btn btn-success pl-3 pr-3" type="button" onclick="RegisterNewAccount()" />
+                    <button onclick="RegisterNewAccount()" class="btn btn-success pl-3 pr-3" >Add&nbsp&nbsp<i class="fa fa-user-plus fa-lg" aria-hidden="true"></i></button>
+                    
+                </td>
+                <td></td>
+                <td></td>
+                <td>
+
+                    <h6 id="ResponseID"></h6>
+                    <img style="display:none" id="AddAccountLoader" src="https://s5.gifyu.com/images/LoaderDeploy.gif" alt="LoaderDeploy.gif" border="0" />
+
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+
+    <div style="float:right">
+        <div style="display:flex">
+            <input class="form-control mr-sm-2 w-50" id="filterAccountsResults" type="text" placeholder="Search Account ID or Public-Key" onkeyup="filterAccountsResults()" />
+            <input hidden class="btn btn-warning" type="button" value="Export To Excel" id="ExportAccountsBtn" />
+            <button onclick="DownloadAccounts()" class="btn btn-warning" id="ExportAccountsBtn">Export To Excel&nbsp&nbsp<i class="fa fa-download" aria-hidden="true"></i></button>
+
+        </div>
+        <br />
+        
+
+            <table id="accountsTable" class=" table table-hover">
+                <thead align="center">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">PublicKey</th>
+                        <th scope="col">Tracking</th>
+                    </tr>
+                </thead>
+                <tbody align="center">
+                    @foreach (var a in @Model.AllAccounts)
+                    {
+                        var etherscanURL = "https://ropsten.etherscan.io/address/" + a.PublicKey;
+
+                        <tr>
+                            <td>@a.ID</td>
+                            <td>@a.PublicKey</td>
+                            <td><a target="_blank" href=@etherscanURL>Here</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        
+    </div>
+
+
+
+</div>
+
+    
+
+
+
+    @section scripts
+{
+        <script type="text/javascript">
+            $(document).ready(function () //bold the link to this page
+            {
+                document.getElementById("navBarAccountsManagement").style.textDecoration = "underline";
+                document.getElementById("navBarAccountsManagement").style.fontWeight = "bold";
+            });
+
+            //$('#ExportAccountsBtn').click(function(){ document.location = '@Url.Action("DownloadExcelAccounts" ,"AccountsManagment")'; });
+
+            function DownloadAccounts() //download the HTML table to excel file
+            {
+                document.location = '@Url.Action("DownloadExcelAccounts" ,"AccountsManagment")';
+            }
+
+
+
+            setInputFilter(document.getElementById("NewIdNumber"), function (value)
+            {
+                return /^\d*\.?\d*$/.test(value); // Allow digits and '.' only, using a RegExp to the id textbox
+            });
+
+            function setInputFilter(textbox, inputFilter) //search balance or id in the HTML table
+            {
+                ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach(function (event) {
+                    textbox.addEventListener(event, function () {
+                        if (inputFilter(this.value)) {
+                            this.oldValue = this.value;
+                            this.oldSelectionStart = this.selectionStart;
+                            this.oldSelectionEnd = this.selectionEnd;
+                        }
+                        else if (this.hasOwnProperty("oldValue")) {
+                            this.value = this.oldValue;
+                            this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+                        }
+                        else {
+                            this.value = "";
+                        }
+                    });
+                });
+            }
+
+        </script>
+    }
